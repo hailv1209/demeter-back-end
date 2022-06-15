@@ -19,6 +19,7 @@ namespace Demeter.Controllers
         public IActionResult Post(BookTableDto request)
         {
             var sqlconnectstring =  _configuration.GetConnectionString("DefaultConnection");
+            Console.WriteLine(sqlconnectstring);
             var connection = new MySqlConnection(sqlconnectstring);
             connection.Open();
             if (connection.State == ConnectionState.Open)

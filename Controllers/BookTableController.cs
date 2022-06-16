@@ -47,11 +47,13 @@ namespace Demeter.Controllers
                         connection.Close();
                         return Ok();
                     }
+                    connection.Close();
                     return BadRequest();
 
                 }
                 catch (System.Exception)
                 {
+                    connection.Close();
                     return BadRequest();
                 }
             }

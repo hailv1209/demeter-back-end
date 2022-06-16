@@ -7,6 +7,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddFluentEmail(builder.Configuration.GetValue<string>("Mail:DefaultFrom"))
+                .AddRazorRenderer()
+                .AddSmtpSender(builder.Configuration.GetValue<string>("Mail:Server"), 587, builder.Configuration.GetValue<string>("Mail:User"), builder.Configuration.GetValue<string>("Mail:HashPassword"));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

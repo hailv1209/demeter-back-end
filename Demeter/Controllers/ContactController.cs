@@ -18,7 +18,7 @@ public class ContactController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult Post(ContactDro request)
+    public IActionResult Post(ContactDto request)
     {
         var sqlconnectstring = _configuration.GetConnectionString("DefaultConnection");
         var connection = new MySqlConnection(sqlconnectstring);
@@ -60,5 +60,109 @@ public class ContactController : ControllerBase
             }
         }
         return BadRequest();
+    }
+
+    [HttpGet]
+    public IActionResult Get([FromQuery] ContactRequestDto request)
+    {
+        var sqlconnectstring = _configuration.GetConnectionString("DefaultConnection");
+        var connection = new MySqlConnection(sqlconnectstring);
+        connection.Open();
+        if (connection.State == ConnectionState.Open)
+        {
+            var response = new PaginationResponseDto<ContactResponseDto>();
+            var count = CountListContact(connection, request);
+            if (count == null || count == 0)
+            {
+                response.Data = new List<ContactResponseDto>();
+                response.Total = 0;
+                connection.Close();
+                return Ok(response);
+            }
+            var list = GetListContact(connection, request);
+            if (list == null)
+            {
+                connection.Close();
+                return BadRequest();
+            }
+            response.Data = list;
+            response.Total = (int)count;
+            connection.Close();
+            return Ok(response);
+        }
+        return BadRequest();
+    }
+
+    private List<ContactResponseDto>? GetListContact(MySqlConnection connection, ContactRequestDto request)
+    {
+        using var command = new MySqlCommand();
+        command.Connection = connection;
+
+        string queryString = @"SELECT * FROM contact LIMIT @Limit OFFSET @Offset;";
+
+        command.CommandText = queryString;
+        command.Parameters.AddWithValue("@Limit", request.PageSize);
+        command.Parameters.AddWithValue("@Offset", request.PageSize * (request.PageNumber - 1));
+        var response = new List<ContactResponseDto>();
+        try
+        {
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var contact = new ContactResponseDto
+                        {
+                            Id = reader.GetInt32("Id"),
+                            Name = reader.GetString("Name"),
+                            Email = reader.GetString("Email"),
+                            Subject = reader.GetString("Subject"),                            
+                            Message = reader.GetString("Message"),
+                        };
+                        response.Add(contact);
+                    }
+                    return response;
+                }
+                return response;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
+
+    private int? CountListContact(MySqlConnection connection, ContactRequestDto request)
+    {
+        using var command = new MySqlCommand();
+        command.Connection = connection;
+
+        string queryString = @"SELECT COUNT(Id) as NumberOfContacts FROM contact;";
+
+        command.CommandText = queryString;
+        try
+        {
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var count = reader.GetInt32("NumberOfContacts");
+                        return count;
+                    }
+                }
+                return 0;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
     }
 }

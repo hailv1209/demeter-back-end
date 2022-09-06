@@ -77,4 +77,111 @@ public class BookTableController : ControllerBase
         }
         return BadRequest();
     }
+
+    [HttpGet]
+    public IActionResult Get([FromQuery] BookTableRequestDto request)
+    {
+        var sqlconnectstring = _configuration.GetConnectionString("DefaultConnection");
+        var connection = new MySqlConnection(sqlconnectstring);
+        connection.Open();
+        if (connection.State == ConnectionState.Open)
+        {
+            var response = new PaginationResponseDto<BookTableResponseDto>();
+            var count = CountListBookTable(connection, request);
+            if (count == null || count == 0)
+            {
+                response.Data = new List<BookTableResponseDto>();
+                response.Total = 0;
+                connection.Close();
+                return Ok(response);
+            }
+            var list = GetListBookTable(connection, request);
+            if (list == null)
+            {
+                connection.Close();
+                return BadRequest();
+            }
+            response.Data = list;
+            response.Total = (int)count;
+            connection.Close();
+            return Ok(response);
+        }
+        return BadRequest();
+    }
+
+    private List<BookTableResponseDto>? GetListBookTable(MySqlConnection connection, BookTableRequestDto request)
+    {
+        using var command = new MySqlCommand();
+        command.Connection = connection;
+
+        string queryString = @"SELECT * FROM booktable LIMIT @Limit OFFSET @Offset;";
+
+        command.CommandText = queryString;
+        command.Parameters.AddWithValue("@Limit", request.PageSize);
+        command.Parameters.AddWithValue("@Offset", request.PageSize * (request.PageNumber - 1));
+        var response = new List<BookTableResponseDto>();
+        try
+        {
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var table = new BookTableResponseDto
+                        {
+                            Id = reader.GetInt32("Id"),
+                            Name = reader.GetString("Name"),
+                            Email = reader.GetString("Email"),
+                            Phone = reader.GetString("Phone"),
+                            Date = reader.GetInt32("Date"),
+                            Time = reader.GetString("Time"),
+                            NumPeople = reader.GetInt32("NumPeople"),
+                            Message = reader.GetString("Message"),
+                        };
+                        response.Add(table);
+                    }
+                    return response;
+                }
+                return response;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
+
+    private int? CountListBookTable(MySqlConnection connection, BookTableRequestDto request)
+    {
+        using var command = new MySqlCommand();
+        command.Connection = connection;
+
+        string queryString = @"SELECT COUNT(Id) as NumberOfBookTables FROM booktable;";
+
+        command.CommandText = queryString;
+        try
+        {
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var count = reader.GetInt32("NumberOfBookTables");
+                        return count;
+                    }
+                }
+                return 0;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
 }

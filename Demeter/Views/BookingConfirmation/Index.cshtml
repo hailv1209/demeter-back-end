@@ -1,0 +1,51 @@
+@model Demeter.DTOs.BookTableResponseDto
+@{
+    ViewData["Title"] = "Index";
+}
+
+<div class="section-title">
+    <h2><span>Booking confirmed</span></h2>
+</div>
+<section class="contact">
+    <div class="info-wrap">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 info"> <i class="bi bi-person"></i>
+                <h4>Customer:</h4>
+                <p>@Model.Name</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-0"> <i class="bi bi-envelope"></i>
+                <h4>Email:</h4>
+                <p>@Model.Email</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-0"> <i class="bi bi-telephone"></i>
+                <h4>Phone:</h4>
+                <p>@Model.Phone</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-0 "> <i class="bi bi-calendar"></i>
+                <h4>Date:</h4>
+                <p>@Model.Date</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-4 "> <i class="bi bi-clock-history"></i>
+                <h4>Time:</h4>
+                <p>@Model.Time</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-4 "> <i class="bi bi-people"></i>
+                <h4>Table for:</h4>
+                <p>@Model.NumPeople</p>
+            </div>
+
+            <div class="col-lg-3 col-md-6 info mt-4 mt-lg-4 "> <i class="bi bi-chat-dots"></i>
+                <h4>Note:</h4>
+                <p>@Model.Message</p>
+            </div>
+        </div>
+    </div>
+    <div>
+
+    </div>
+</section>

@@ -10,4 +10,5 @@ public class BookTableResponseDto
     public string? Time { get; set; }
     public int? NumPeople { get; set; }
     public string? Message { get; set; }
+    public int Status { get; set; }
 }

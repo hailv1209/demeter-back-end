@@ -1,5 +1,5 @@
 using Demeter.DTOs;
-using FluentEmail.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using System.Data;
@@ -63,6 +63,7 @@ public class ContactController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public IActionResult Get([FromQuery] ContactRequestDto request)
     {
         var sqlconnectstring = _configuration.GetConnectionString("DefaultConnection");
@@ -98,7 +99,7 @@ public class ContactController : ControllerBase
         using var command = new MySqlCommand();
         command.Connection = connection;
 
-        string queryString = @"SELECT * FROM contact LIMIT @Limit OFFSET @Offset;";
+        string queryString = @"SELECT * FROM contact ORDER BY Id DESC LIMIT @Limit OFFSET @Offset;";
 
         command.CommandText = queryString;
         command.Parameters.AddWithValue("@Limit", request.PageSize);

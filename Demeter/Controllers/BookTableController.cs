@@ -1,5 +1,6 @@
 using Demeter.DTOs;
 using FluentEmail.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using System.Data;
@@ -47,10 +48,18 @@ public class BookTableController : ControllerBase
                 rows_affected = command.ExecuteNonQuery();
                 if (rows_affected > 0)
                 {
-                    var template = @"
+                    var bookTable = GetBookTable(connection, request);
+                    if (bookTable == null)
+                    {
+                        connection.Close();
+                        return BadRequest();
+                    }
+                    string baseUrl = GetBaseUrl();
+                    var template = @$"
                     Hi @Model.Name!
                     <br/><br/>
-                    You have made a reservation at our restaurant at @Model.Time on @Model.Date. To be sure you want to reserve a table please send yes, or no if you change your mind.
+                    You have made a reservation at our restaurant at @Model.Time on @Model.Date. To be sure you want to reserve a table, please click the following link. 
+                    <a href='{baseUrl}/BookingConfirmation?bookTableId={bookTable.Id}'>Here</a>
                     <br/><br/>
                     Thank you very much for trusting our restaurant.";
 
@@ -78,7 +87,65 @@ public class BookTableController : ControllerBase
         return BadRequest();
     }
 
+    private string GetBaseUrl()
+    {
+        var request = HttpContext.Request;
+
+        var host = request.Host.ToUriComponent();
+
+        var pathBase = request.PathBase.ToUriComponent();
+
+        return $"{request.Scheme}://{host}{pathBase}";
+    }
+
+    private BookTableResponseDto? GetBookTable(MySqlConnection connection, BookTableDto request)
+    {
+        using var command = new MySqlCommand();
+        command.Connection = connection;
+
+        string queryString = @"SELECT * FROM booktable WHERE Status = @Status AND Email = @Email AND Phone = @Phone ORDER BY Id DESC;";
+
+        command.CommandText = queryString;
+        command.Parameters.AddWithValue("@Status", 0);
+        command.Parameters.AddWithValue("@Email", request.Email);
+        command.Parameters.AddWithValue("@Phone", request.Phone);
+        try
+        {
+            using (MySqlDataReader reader = command.ExecuteReader())
+            {
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var bookTable = new BookTableResponseDto
+                        {
+                            Id = reader.GetInt32("Id"),
+                            Name = reader.GetString("Name"),
+                            Email = reader.GetString("Email"),
+                            Phone = reader.GetString("Phone"),
+                            Date = reader.GetInt32("Date"),
+                            Time = reader.GetString("Time"),
+                            NumPeople = reader.GetInt32("NumPeople"),
+                            Message = reader.GetString("Message"),
+                            Status = reader.GetInt32("Status")
+                        };
+                        return bookTable;
+                    }
+                    return null;
+                }
+                return null;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
+
     [HttpGet]
+    [Authorize]
     public IActionResult Get([FromQuery] BookTableRequestDto request)
     {
         var sqlconnectstring = _configuration.GetConnectionString("DefaultConnection");
@@ -114,7 +181,7 @@ public class BookTableController : ControllerBase
         using var command = new MySqlCommand();
         command.Connection = connection;
 
-        string queryString = @"SELECT * FROM booktable LIMIT @Limit OFFSET @Offset;";
+        string queryString = @"SELECT * FROM booktable ORDER BY Id DESC LIMIT @Limit OFFSET @Offset;";
 
         command.CommandText = queryString;
         command.Parameters.AddWithValue("@Limit", request.PageSize);
@@ -138,6 +205,7 @@ public class BookTableController : ControllerBase
                             Time = reader.GetString("Time"),
                             NumPeople = reader.GetInt32("NumPeople"),
                             Message = reader.GetString("Message"),
+                            Status = reader.GetInt32("Status")
                         };
                         response.Add(table);
                     }
